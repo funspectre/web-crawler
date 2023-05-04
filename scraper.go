@@ -34,7 +34,7 @@ func end(pendingJobCount chan<- int) {
 }
 
 func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingLinks chan<- string, pendingJobCount chan<- int, link string) error {
-	log.Printf("%d unique links visited", visitedLinks.Size())
+	//log.Printf("%d unique links visited", visitedLinks.Size())
 
 	defer end(pendingJobCount)
 
@@ -46,7 +46,7 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 		return errors.New(fmt.Sprintf("%s is being visited currently", link))
 	}
 
-	log.Printf("Attempting to visit %s", link)
+	//log.Printf("Attempting to visit %s", link)
 	visitedLinks.Try(link)
 	res, err := http.Get(link)
 	if err != nil {
@@ -70,15 +70,15 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 		return errors.New(fmt.Sprintf("status code error: %d %s", res.StatusCode, res.Status))
 	}
 
-	log.Printf("Page fetched successfully %s", link)
+	//log.Printf("Page fetched successfully %s", link)
 
-	log.Printf("Parsing document at %s", link)
+	//log.Printf("Parsing document at %s", link)
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		return err
 	}
 
-	log.Printf("Document at %s parsed successfully", link)
+	//log.Printf("Document at %s parsed successfully", link)
 
 	linksCount := 0
 
@@ -114,7 +114,7 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 
 	siteMap.Add(link, links)
 
-	log.Printf("%d eligible links in document at %s scraped successfully", linksCount, link)
+	//log.Printf("%d eligible links in document at %s scraped successfully", linksCount, link)
 
 	return nil
 }

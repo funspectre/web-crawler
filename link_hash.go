@@ -15,13 +15,13 @@ func (lh *LinkHash) Add(link string) {
 	lh.visited[link] = true
 	lh.scraping[link] = false
 }
-func (lh *LinkHash) IsScraping(link string) bool {
+func (lh *LinkHash) Scraping(link string) bool {
 	lh.mutex.Lock()
 	defer lh.mutex.Unlock()
 	return lh.scraping[link] == true
 }
 
-func (lh *LinkHash) Has(link string) bool {
+func (lh *LinkHash) Visited(link string) bool {
 	lh.mutex.Lock()
 	defer lh.mutex.Unlock()
 	return lh.visited[link] == true
@@ -36,7 +36,7 @@ func (lh *LinkHash) Try(link string) {
 func (lh *LinkHash) Failed(link string) {
 	lh.mutex.Lock()
 	defer lh.mutex.Unlock()
-	lh.scraping[link] = false
+	delete(lh.scraping, link)
 }
 
 func (lh *LinkHash) Tries(link string) int {

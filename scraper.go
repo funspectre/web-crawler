@@ -97,7 +97,7 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 			links = append(links, resolvedLink)
 		}
 
-		if !visitedLinks.Has(resolvedLink) {
+		if !visitedLinks.Visited(resolvedLink) {
 			pendingLinks <- resolvedLink
 		}
 

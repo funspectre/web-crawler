@@ -37,12 +37,12 @@ func main() {
 		for {
 			select {
 			case link := <-pendingLinks:
-				if visitedLinks.Has(link) {
+				if visitedLinks.Visited(link) {
 					//log.Println(fmt.Sprintf("%s has been visited already", link))
 					continue
 				}
 
-				if visitedLinks.IsScraping(link) {
+				if visitedLinks.Scraping(link) {
 					//log.Println(fmt.Sprintf("%s is being visited currently", link))
 					continue
 				}

@@ -11,8 +11,7 @@ import (
 func main() {
 	group := new(errgroup.Group)
 
-	pendingLinks := make(chan string, 32)
-	pendingJobCount := make(chan int)
+	pendingLinks := make(chan string)
 	visitedLinks := LinkHash{
 		scraping: map[string]bool{},
 		visited:  map[string]bool{},
@@ -34,22 +33,33 @@ func main() {
 		parsedStartingUrl.Path = "/"
 	}
 
-	go WatchDog(pendingLinks, pendingJobCount)
+	go func() {
+		for {
+			select {
+			case link := <-pendingLinks:
+				if visitedLinks.Has(link) {
+					//log.Println(fmt.Sprintf("%s has been visited already", link))
+					continue
+				}
+
+				if visitedLinks.IsScraping(link) {
+					//log.Println(fmt.Sprintf("%s is being visited currently", link))
+					continue
+				}
+
+				group.Go(func() error {
+					return Scrape(parsedStartingUrl, &visitedLinks, &siteMap, pendingLinks, link)
+				})
+			default:
+				continue
+			}
+		}
+	}()
 
 	pendingLinks <- parsedStartingUrl.String()
 
-	for link := range pendingLinks {
-		if visitedLinks.Has(link) {
-			continue
-		}
-		pendingJobCount <- 1
-		group.Go(func() error {
-			return Scrape(parsedStartingUrl, &visitedLinks, &siteMap, pendingLinks, pendingJobCount, link)
-		})
-	}
-
-	//wg.Wait()
 	if err := group.Wait(); err != nil {
+		log.Println("Error Found!")
 		log.Println(err)
 	}
 

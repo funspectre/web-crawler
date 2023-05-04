@@ -13,6 +13,7 @@ func (lh *LinkHash) Add(link string) {
 	lh.mutex.Lock()
 	defer lh.mutex.Unlock()
 	lh.visited[link] = true
+	lh.scraping[link] = false
 }
 func (lh *LinkHash) IsScraping(link string) bool {
 	lh.mutex.Lock()

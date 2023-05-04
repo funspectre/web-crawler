@@ -28,23 +28,8 @@ func normalizeUrl(rootUrl *url.URL, link string) *url.URL {
 	return u
 }
 
-func end(pendingJobCount chan<- int) {
-	pendingJobCount <- -1
-	return
-}
-
-func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingLinks chan<- string, pendingJobCount chan<- int, link string) error {
+func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingLinks chan<- string, link string) error {
 	//log.Printf("%d unique links visited", visitedLinks.Size())
-
-	defer end(pendingJobCount)
-
-	if visitedLinks.Has(link) {
-		return errors.New(fmt.Sprintf("%s has been visited already", link))
-	}
-
-	if visitedLinks.IsScraping(link) {
-		return errors.New(fmt.Sprintf("%s is being visited currently", link))
-	}
 
 	//log.Printf("Attempting to visit %s", link)
 	visitedLinks.Try(link)
@@ -61,13 +46,20 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 	contentType := res.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
 		visitedLinks.Add(link)
-		return errors.New(fmt.Sprintf("%s is of Content-Type: %s", link, contentType))
+
+		//log.Println(fmt.Sprintf("%s is of Content-Type: %s", link, contentType))
+		return nil
 	}
 
 	visitedLinks.Add(link)
 
 	if res.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("status code error: %d %s", res.StatusCode, res.Status))
+		if res.StatusCode == 404 {
+			log.Println(fmt.Sprintf("Document at %s not found", link))
+			return nil
+		}
+
+		return errors.New(fmt.Sprintf("%s status code error: %d %s", link, res.StatusCode, res.Status))
 	}
 
 	//log.Printf("Page fetched successfully %s", link)

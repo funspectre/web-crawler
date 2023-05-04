@@ -10,13 +10,13 @@ type SiteMap struct {
 	table map[string][]string
 }
 
-func (sm *SiteMap) add(parentLink string, childLinks []string) {
+func (sm *SiteMap) Add(parentLink string, childLinks []string) {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 	sm.table[parentLink] = childLinks
 }
 
-func (sm *SiteMap) show() {
+func (sm *SiteMap) Show() {
 	sm.mutex.Lock()
 	defer sm.mutex.Unlock()
 	for parentLink, childLinks := range sm.table {

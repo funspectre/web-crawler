@@ -1,21 +1,22 @@
 package main
 
 import (
+	"golang.org/x/sync/errgroup"
 	"log"
 	"net/url"
 	"os"
 	"path/filepath"
-	"sync"
 )
 
 func main() {
-	var wg sync.WaitGroup
+	group := new(errgroup.Group)
 
 	pendingLinks := make(chan string, 32)
 	pendingJobCount := make(chan int)
 	visitedLinks := LinkHash{
-		visited: map[string]bool{},
-		trials:  map[string]int{},
+		scraping: map[string]bool{},
+		visited:  map[string]bool{},
+		trials:   map[string]int{},
 	}
 	siteMap := SiteMap{
 		table: map[string][]string{},
@@ -42,11 +43,15 @@ func main() {
 			continue
 		}
 		pendingJobCount <- 1
-		wg.Add(1)
-		go Scrape(&wg, parsedStartingUrl, &visitedLinks, &siteMap, pendingLinks, pendingJobCount, link)
+		group.Go(func() error {
+			return Scrape(parsedStartingUrl, &visitedLinks, &siteMap, pendingLinks, pendingJobCount, link)
+		})
 	}
 
-	wg.Wait()
+	//wg.Wait()
+	if err := group.Wait(); err != nil {
+		log.Println(err)
+	}
 
 	// print output summary
 	log.Printf("%d unique web pages found in domain: %s\n", visitedLinks.Size(), parsedStartingUrl.Host)

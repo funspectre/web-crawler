@@ -1,13 +1,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
-	"sync"
 )
 
 func normalizeUrl(rootUrl *url.URL, link string) *url.URL {
@@ -28,48 +28,46 @@ func normalizeUrl(rootUrl *url.URL, link string) *url.URL {
 	return u
 }
 
-func end(wg *sync.WaitGroup, pendingJobCount chan<- int) {
-	wg.Done()
+func end(pendingJobCount chan<- int) {
 	pendingJobCount <- -1
 	return
 }
 
-func Scrape(wg *sync.WaitGroup, rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingLinks chan<- string, pendingJobCount chan<- int, link string) {
+func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingLinks chan<- string, pendingJobCount chan<- int, link string) error {
 	log.Printf("%d unique links visited", visitedLinks.Size())
 
-	defer func() {
-		if r := recover(); r != nil {
-			m := fmt.Sprintf("Recovered from error while processing %s:\n", link)
-			log.Println(m, r)
-		}
-	}()
-	defer end(wg, pendingJobCount)
+	defer end(pendingJobCount)
 
 	if visitedLinks.Has(link) {
-		log.Panicf("%s has been visited already", link)
+		return errors.New(fmt.Sprintf("%s has been visited already", link))
+	}
+
+	if visitedLinks.IsScraping(link) {
+		return errors.New(fmt.Sprintf("%s is being visited currently", link))
 	}
 
 	log.Printf("Attempting to visit %s", link)
 	visitedLinks.Try(link)
 	res, err := http.Get(link)
 	if err != nil {
+		visitedLinks.Failed(link)
 		if visitedLinks.Tries(link) < 3 {
 			pendingLinks <- link
 		}
-		log.Panic(err)
+		return err
 	}
 	defer res.Body.Close()
 
 	contentType := res.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "text/html") {
 		visitedLinks.Add(link)
-		log.Panicf("%s is of Content-Type: %s", link, contentType)
+		return errors.New(fmt.Sprintf("%s is of Content-Type: %s", link, contentType))
 	}
 
 	visitedLinks.Add(link)
 
 	if res.StatusCode != 200 {
-		log.Panicf("status code error: %d %s", res.StatusCode, res.Status)
+		return errors.New(fmt.Sprintf("status code error: %d %s", res.StatusCode, res.Status))
 	}
 
 	log.Printf("Page fetched successfully %s", link)
@@ -77,7 +75,7 @@ func Scrape(wg *sync.WaitGroup, rootUrl *url.URL, visitedLinks *LinkHash, siteMa
 	log.Printf("Parsing document at %s", link)
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		log.Panic(err)
+		return err
 	}
 
 	log.Printf("Document at %s parsed successfully", link)
@@ -114,7 +112,9 @@ func Scrape(wg *sync.WaitGroup, rootUrl *url.URL, visitedLinks *LinkHash, siteMa
 		linksCount++
 	})
 
-	siteMap.add(link, links)
+	siteMap.Add(link, links)
 
 	log.Printf("%d eligible links in document at %s scraped successfully", linksCount, link)
+
+	return nil
 }

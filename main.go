@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"net/url"
@@ -38,20 +39,18 @@ func main() {
 			select {
 			case link := <-pendingLinks:
 				if visitedLinks.Visited(link) {
-					//log.Println(fmt.Sprintf("%s has been visited already", link))
+					log.Println(fmt.Sprintf("%s has been visited already", link))
 					continue
 				}
 
 				if visitedLinks.Scraping(link) {
-					//log.Println(fmt.Sprintf("%s is being visited currently", link))
+					log.Println(fmt.Sprintf("%s is being visited currently", link))
 					continue
 				}
 
 				group.Go(func() error {
 					return Scrape(parsedStartingUrl, &visitedLinks, &siteMap, pendingLinks, link)
 				})
-			default:
-				continue
 			}
 		}
 	}()

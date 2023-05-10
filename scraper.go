@@ -29,9 +29,9 @@ func normalizeUrl(rootUrl *url.URL, link string) *url.URL {
 }
 
 func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingLinks chan<- string, link string) error {
-	//log.Printf("%d unique links visited", visitedLinks.Size())
+	log.Printf("%d unique links visited", visitedLinks.Size())
+	log.Printf("Attempting to visit %s", link)
 
-	//log.Printf("Attempting to visit %s", link)
 	visitedLinks.Try(link)
 	res, err := http.Get(link)
 	if err != nil {
@@ -47,7 +47,7 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 	if !strings.HasPrefix(contentType, "text/html") {
 		visitedLinks.Add(link)
 
-		//log.Println(fmt.Sprintf("%s is of Content-Type: %s", link, contentType))
+		log.Println(fmt.Sprintf("%s is of Content-Type: %s", link, contentType))
 		return nil
 	}
 
@@ -62,15 +62,15 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 		return errors.New(fmt.Sprintf("%s status code error: %d %s", link, res.StatusCode, res.Status))
 	}
 
-	//log.Printf("Page fetched successfully %s", link)
+	log.Printf("Page fetched successfully %s", link)
 
-	//log.Printf("Parsing document at %s", link)
+	log.Printf("Parsing document at %s", link)
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
 		return err
 	}
 
-	//log.Printf("Document at %s parsed successfully", link)
+	log.Printf("Document at %s parsed successfully", link)
 
 	linksCount := 0
 
@@ -106,7 +106,7 @@ func Scrape(rootUrl *url.URL, visitedLinks *LinkHash, siteMap *SiteMap, pendingL
 
 	siteMap.Add(link, links)
 
-	//log.Printf("%d eligible links in document at %s scraped successfully", linksCount, link)
+	log.Printf("%d eligible links in document at %s scraped successfully", linksCount, link)
 
 	return nil
 }

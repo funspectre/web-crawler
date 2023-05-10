@@ -12,10 +12,12 @@ To build the program, you need to have the following installed
 Then run the following commands in the project folder:
 
 ```shell
+# Download dependencies
+go mod vendor
 # Build the program
-go build .
+go build -o web-crawler
 # Run the program
-./web-crawler https://example.com/
+./web-crawler https://gobyexample.com/
 ```
 ## Sitemap Format
 
